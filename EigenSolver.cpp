@@ -6,75 +6,118 @@
 #include <iostream>
 #include <chrono>
 
+using T = double;
+using SpMat = Eigen::SparseMatrix<T>; 
 
-typedef Eigen::SparseMatrix<double> SpMat;
-struct trsm_system
-{
-    int size;
-    int nrhs;
-    int nnz;
-    int ld;
-    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_matrix;
-    Eigen::MatrixXd B ;
+struct trsm_system {
+    int size{};
+    int nrhs{};
+    int nnz{};
+    SpMat            A;  
+    Eigen::MatrixXd  B;
 };
 
-trsm_system load_system(const char * file)
+trsm_system load_system(const char* file)
 {
-    FILE * f = fopen(file, "r");
-    if(f == nullptr) throw std::runtime_error("cannot open matrix file");
+    FILE* f = fopen(file, "r");
+    if (!f) throw std::runtime_error("cannot open matrix file");
 
     trsm_system sys;
-    fscanf(f, "%d%d%d", &sys.size, &sys.nrhs, &sys.nnz);
-    int size = sys.size, nrhs = sys.nrhs, nnz = sys.nnz;
-    std::vector<int> rowptrs(sys.size+1);
-    std::vector<int> colidxs(sys.nnz);
-    std::vector<double> vals(sys.nnz);
-    for(int r = 0; r <= sys.size; r++) fscanf(f, "%d", &rowptrs[r]);
-    for(int i = 0; i < sys.nnz; i++) fscanf(f, "%d", &colidxs[i]);
-    for(int i = 0; i < sys.nnz; i++) fscanf(f, "%lf", &vals[i]);
-    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_matrix(size, size);
-    std::vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(nnz);
-
-    for (int i = 0; i < size; ++i) {
-        for (int j = rowptrs[i]; j < rowptrs[i+1]; ++j) {
-            triplets.emplace_back(i, colidxs[j], vals[j]);
-        }
+    if (fscanf(f, "%d%d%d", &sys.size, &sys.nrhs, &sys.nnz) != 3) {
+        fclose(f);
+        throw std::runtime_error("bad header");
     }
 
-    eigen_matrix.setFromTriplets(triplets.begin(), triplets.end());
-    eigen_matrix.makeCompressed();
+    std::vector<int>    rowptr(sys.size + 1);
+    std::vector<int>    colidx(sys.nnz);
+    std::vector<double> vals(sys.nnz);
 
+    for (int r = 0; r <= sys.size; ++r) if (fscanf(f, "%d", &rowptr[r]) != 1) {
+        fclose(f); throw std::runtime_error("bad rowptr");
+    }
+    for (int i = 0; i < sys.nnz; ++i)    if (fscanf(f, "%d", &colidx[i]) != 1) {
+        fclose(f); throw std::runtime_error("bad colidx");
+    }
+    for (int i = 0; i < sys.nnz; ++i)    if (fscanf(f, "%lf", &vals[i]) != 1) {
+        fclose(f); throw std::runtime_error("bad vals");
+    }
     fclose(f);
 
-    Eigen::MatrixXd B(size, nrhs);
-    srand(42);
-    for (int i=0; i < sys.size; ++i){
-        for (int j=0; j < sys.nrhs; ++j){
-            B(i, j) = (double)rand() / RAND_MAX;
+    std::vector<Eigen::Triplet<T>> trips;
+    trips.reserve(sys.nnz);
+    for (int i = 0; i < sys.size; ++i) {
+        for (int p = rowptr[i]; p < rowptr[i + 1]; ++p) {
+            trips.emplace_back(i, colidx[p], vals[p]);
         }
     }
-    sys.B  = B;
-    sys.eigen_matrix = eigen_matrix;
+
+    sys.A.resize(sys.size, sys.size);
+    sys.A.setFromTriplets(trips.begin(), trips.end());
+    sys.A.makeCompressed();
+
+    sys.B.resize(sys.size, sys.nrhs);
+    srand(42);
+    for (int i = 0; i < sys.size; ++i)
+        for (int j = 0; j < sys.nrhs; ++j)
+            sys.B(i, j) = static_cast<double>(rand()) / RAND_MAX;
+
     return sys;
 }
 
-void trsm_generic(trsm_system & sys)
+static double benchmark_sparse_triangular(const SpMat& A, const Eigen::MatrixXd& B,
+                                          int warmup = 2, int repeats = 10)
 {
-    auto start = std::chrono::high_resolution_clock::now();
-    Eigen::SparseMatrix<double, Eigen::RowMajor>  A = sys.eigen_matrix;
-    Eigen::MatrixXd X = A.template triangularView<Eigen::UnitLower>().solve(sys.B);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    printf("%dx%d,%12ld ms\n", sys.size, sys.size, duration);
+    double total_ms = 0.0;
+    Eigen::MatrixXd X(B.rows(), B.cols());
+    for (int rep = 0; rep < warmup + repeats; ++rep) {
+        auto t0 = std::chrono::high_resolution_clock::now();
+        X.noalias() = A.template triangularView<Eigen::Lower>().solve(B);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> dt = t1 - t0;
+        if (rep >= warmup) total_ms += dt.count();
+    }
+    return total_ms / repeats;
 }
 
-int main(){
-    std::vector<const char*> matrix_files = {"matrix13.txt"};
-    for(const char* file : matrix_files){
-        trsm_system sys = load_system(file);
-        trsm_generic(sys);
+static double benchmark_dense_triangular(const SpMat& A, const Eigen::MatrixXd& B,
+                                         int warmup = 2, int repeats = 10)
+{
+    // Convertir una vez a densa fuera del bucle de timing
+    Eigen::MatrixXd Ad = Eigen::MatrixXd(A); // usa solo la parte inferior en el solve
+    double total_ms = 0.0;
+    Eigen::MatrixXd X(B.rows(), B.cols());
+    for (int rep = 0; rep < warmup + repeats; ++rep) {
+        auto t0 = std::chrono::high_resolution_clock::now();
+        X.noalias() = Ad.template triangularView<Eigen::Lower>().solve(B);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> dt = t1 - t0;
+        if (rep >= warmup) total_ms += dt.count();
     }
+    return total_ms / repeats;
+}
 
+void trsm_generic(trsm_system& sys)
+{
+    // Sparse (CSR interno de Eigen)
+    double ms_sparse = benchmark_sparse_triangular(sys.A, sys.B);
+
+    // Dense (conversión a MatrixXd y solve triangular)
+    double ms_dense  = benchmark_dense_triangular(sys.A, sys.B);
+
+    std::printf("SparseTriSolve,%dx%d,%.6f ms\n", sys.size, sys.size, ms_sparse);
+    std::printf("DenseTriSolve,%dx%d,%.6f ms\n",  sys.size, sys.size, ms_dense);
+}
+
+int main()
+{
+    std::vector<const char*> matrix_files = {"matrix13.txt", "matrix16.txt", "matrix20.txt"};
+    for (const char* file : matrix_files) {
+        try {
+            trsm_system sys = load_system(file);
+            trsm_generic(sys);
+        } catch (const std::exception& e) {
+            std::cerr << "Error en " << file << ": " << e.what() << "\n";
+        }
+    }
     return 0;
 }

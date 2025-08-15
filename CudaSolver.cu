@@ -123,6 +123,7 @@ void run_spm(const trsm_system& sys, cusparseSpMatDescr_t& descr_A, const cuspar
     CHECK(cudaEventDestroy(e_stop));
     CHECK(cusparseDestroyDnMat(descr_B));
     CHECK(cusparseDestroyDnMat(descr_X));
+    CHECK(cusparseSpSM_destroyDescr(descr_spsm));
     float ms_avg = ms_total / repeats;
     printf("%s,%dx%d,%12.6f\n", is_coo ? "COO" : "CSR", sys.size, sys.size, ms_avg);
 }
@@ -155,7 +156,8 @@ void trsm_generic(trsm_system & sys)
     cusparseSpMatDescr_t A_coo;
     CHECK(cusparseCreateCoo(&A_coo, sys.size, sys.size, sys.nnz,
                             A_coo_rows, sys.A_colidxs, sys.A_vals,
-                            CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
+                            CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                            CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
 
     set_tri_attrs(A_coo);
 
