@@ -1,0 +1,31 @@
+sets:
+  pde_fem:
+    - name: bcsstk18
+    - name: bcsstk31
+    - name: thermal2
+    - name: audikw_1
+  powerlaw:
+    - name: web-Google
+    - name: as-Skitter
+    - name: soc-LiveJournal1
+  circuits:
+    - name: G3_circuit
+    - name: ASIC_680k
+  roads:
+    - name: roadNet-CA
+  nlp:
+    - name: nlpkkt80
+    - name: nlpkkt120
+    - name: nlpkkt200
+synthetic:
+  laplacian2d:
+    n_list: [65536, 262144, 1048576]   # m=256,512,1024
+  rmat:
+    n: 1048576                          # 1M
+    edges_per_vertex: [4, 8, 16, 32]
+  banded:
+    n: 200000
+    bandwidths: [5, 20, 100, 400]
+  fixed_n_var_nnz:
+    n: 200000
+    nnz_per_row: [5, 10, 20, 40]
