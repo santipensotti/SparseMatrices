@@ -54,7 +54,7 @@ void destroy_device(descriptorDevice<T>& D) {
     D = {};
 }
 
-void runSpMV(const descriptorDevice<float>& dA, const float* dx, float* dy, cusparseSpMatDescr_t& descr_A, const bool is_coo=false) {
+double runSpMV(const descriptorDevice<float>& dA, const float* dx, float* dy, cusparseSpMatDescr_t& descr_A, const bool is_coo=false) {
     const int m = dA.rows, n = dA.cols, nnz = dA.nnz;
 
     cusparseHandle_t handle;  CHECK_CUSPARSE(cusparseCreate(&handle));
@@ -106,11 +106,25 @@ void runSpMV(const descriptorDevice<float>& dA, const float* dx, float* dy, cusp
         total_ms += ms;
         CHECK_CUDA(cudaEventDestroy(s)); CHECK_CUDA(cudaEventDestroy(e));
     }
-    printf("%f,%.6f ms\n", is_coo ? "COO" : "CSR", total_ms/iters);
     cudaFree(dBuffer);
     cusparseDestroyDnVec(x_vec);
     cusparseDestroyDnVec(y_vec);
     cusparseDestroy(handle);
+    double ms = total_ms / iters;
+    return ms;
+}
+
+
+void append_row_csv(const std::string& filename, int n, int k, int nnz, double t_csr, double t_coo, double t_eigen) {
+    bool write_header = !std::filesystem::exists(csv_path)
+                      || std::filesystem::file_size(csv_path) == 0;
+    std::ofstream f(csv_path, std::ios::app);
+    if (!f) { fprintf(stderr, "No pude abrir %s\n", csv_path.c_str()); return; }
+    if (write_header) {
+        f << "matrix_name,n,k,nnz,tiempoCSR_ms,tiempoCOO_ms,tiempoEigen_ms\n";
+    }
+    f << matrix_name << "," << n << "," << k << "," << nnz << ","
+      << std::fixed << t_csr << "," << t_coo << "," << t_eigen << "\n";
 }
 
 template<typename T>
@@ -157,7 +171,7 @@ int main(int argc, char** argv) {
         CUDA_R_32F
     ));
     
-    runSpMV(dA, dA.d_x, dy, A_csr);
+    double time_csr = runSpMV(dA, dA.d_x, dy, A_csr);
     printf("SpMV completado.\n");
     CHECK_CUSPARSE(cusparseDestroySpMat(A_csr));
 
@@ -175,9 +189,7 @@ int main(int argc, char** argv) {
                             CUSPARSE_INDEX_32I,
                             CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
     
-    printf("Ejecutando SpMV en COO...\n");
-    runSpMV(dA, dA.d_x, dy_2, A_coo, true);
-    printf("SpMV en COO completado.\n");
+    douuble time_coo = runSpMV(dA, dA.d_x, dy_2, A_coo, true);
     CHECK_CUSPARSE(cusparseDestroySpMat(A_coo));
 
     // 6) Traer resultado y mostrar algunas entradas
@@ -194,21 +206,21 @@ int main(int argc, char** argv) {
     Eigen::Matrix<T, Eigen::Dynamic, 1> y_cpu = A * x_cpu;
     auto t1 = std::chrono::high_resolution_clock::now();
     double ms_cpu = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    printf("SpMV Eigen (CPU): %.3f ms\n", ms_cpu);
-
+    
     // 9) Comparar error Cpu y Gpu (Csr y Coo)
-    Eigen::Map<const Eigen::Matrix<T, -1, 1>> y_gpu(hy.data(), (int)hy.size());
-    CHECK_CUDA(cudaMemcpy(hy.data(), dy_2, H.rows*sizeof(T), cudaMemcpyDeviceToHost));
-    Eigen::Map<const Eigen::Matrix<T, -1, 1>> y_gpu_2(hy.data(), (int)hy.size());
+    // Eigen::Map<const Eigen::Matrix<T, -1, 1>> y_gpu(hy.data(), (int)hy.size());
+    // CHECK_CUDA(cudaMemcpy(hy.data(), dy_2, H.rows*sizeof(T), cudaMemcpyDeviceToHost));
+    // Eigen::Map<const Eigen::Matrix<T, -1, 1>> y_gpu_2(hy.data(), (int)hy.size());
 
-    errorGpuCpu(y_cpu, y_gpu);  
-    errorGpuCpu(y_cpu, y_gpu_2);
+    // errorGpuCpu(y_cpu, y_gpu);  
+    // errorGpuCpu(y_cpu, y_gpu_2);
 
     // 10) Limpieza
 
-    cudaFree(dy);
-    cudaFree(dy_2);
+    CHECK_CUDA(cudaFree(dy));
+    CHECK_CUDA(cudaFree(dy_2));
     destroy_device(dA);
-
+    CHECK_CUSPARSE(cusparseDestroy(handle));
+    append_row_csv(path, m, n, nnz, time_csr, time_coo, ms_cpu);
     return 0;
 }
