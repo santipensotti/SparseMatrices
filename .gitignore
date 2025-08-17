@@ -8,6 +8,7 @@
 *.so
 *.a
 *.lib
+*.zip
 build/
 bin/
 .vscode/

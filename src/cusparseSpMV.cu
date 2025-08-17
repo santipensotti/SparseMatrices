@@ -1,11 +1,12 @@
-%%writefile spMV.cu
-#include "mtxToCuda.h"          // Debe proveer CSRHost<T> y load_csr_from_mtx<T>
+#include "helpers/mtxToCuda.h"          // Debe proveer CSRHost<T> y load_csr_from_mtx<T>
 #include <cusparse.h>
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <vector>
 #include <cstdlib>
 #include <chrono>
+#include <fstream>
+#include <string>
 #include <Eigen/Sparse>
 
 
@@ -22,7 +23,7 @@ struct descriptorDevice {
     int rows=0, cols=0, nnz=0;
     int *d_rowptr=nullptr, 
     *d_colind=nullptr;
-    int* d_x=nullptr;
+    T* d_x=nullptr;
     T   *d_vals=nullptr;
 };
 
@@ -38,9 +39,9 @@ descriptorDevice<T> to_device(const CSRHost<T>& H, const std::vector<T>& x) {
     CHECK_CUDA(cudaMemcpy(D.d_colind, H.colind.data(), H.nnz*sizeof(int),      cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(D.d_vals,   H.vals.data(),   H.nnz*sizeof(T),        cudaMemcpyHostToDevice));
 
-    // Allocate and copy x vector
-    CHECK_CUDA(cudaMalloc((void**)&D.d_x, x.size()*sizeof(int)));
-    CHECK_CUDA(cudaMemcpy(D.d_x, x.data(), x.size()*sizeof(int), cudaMemcpyHostToDevice));
+    // Allocate and copy x vector (type T)
+    CHECK_CUDA(cudaMalloc((void**)&D.d_x, x.size()*sizeof(T)));
+    CHECK_CUDA(cudaMemcpy(D.d_x, x.data(), x.size()*sizeof(T), cudaMemcpyHostToDevice));
 
     return D;
 }
@@ -115,9 +116,17 @@ double runSpMV(const descriptorDevice<float>& dA, const float* dx, float* dy, cu
 }
 
 
-void append_row_csv(const std::string& filename, int n, int k, int nnz, double t_csr, double t_coo, double t_eigen) {
-    bool write_header = !std::filesystem::exists(csv_path)
-                      || std::filesystem::file_size(csv_path) == 0;
+void append_row_csv(const std::string& csv_path, const std::string& matrix_name, int n, int k, int nnz, double t_csr, double t_coo, double t_eigen) {
+    bool write_header = true;
+    {
+        std::ifstream test(csv_path, std::ios::binary);
+        if (test.good()) {
+            test.seekg(0, std::ios::end);
+            write_header = (test.tellg() == 0);
+        } else {
+            write_header = true; // no existe -> escribir cabecera
+        }
+    }
     std::ofstream f(csv_path, std::ios::app);
     if (!f) { fprintf(stderr, "No pude abrir %s\n", csv_path.c_str()); return; }
     if (write_header) {
@@ -144,12 +153,12 @@ int main(int argc, char** argv) {
     using T = float;
     CSRHost<T> H = load_csr_from_mtx<T>(path);
     printf("Matriz: %d x %d  nnz=%d\n", H.rows, H.cols, H.nnz);
-    descriptorDevice<T> dA = to_device(H);
 
     // 3) Crear x,y (host) con tamaños correctos
     std::vector<T> hx(H.cols), hy(H.rows, 0.0f);
     std::srand(42);
     for (int i = 0; i < (int)hx.size(); ++i) hx[i] = (T)std::rand() / RAND_MAX;
+    descriptorDevice<T> dA = to_device(H, hx);
 
     // 4) Reservar x,y en device y copiar
     T *dy=nullptr, *dy_2=nullptr; 
@@ -189,7 +198,7 @@ int main(int argc, char** argv) {
                             CUSPARSE_INDEX_32I,
                             CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
     
-    douuble time_coo = runSpMV(dA, dA.d_x, dy_2, A_coo, true);
+    double time_coo = runSpMV(dA, dA.d_x, dy_2, A_coo, true);
     CHECK_CUSPARSE(cusparseDestroySpMat(A_coo));
 
     // 6) Traer resultado y mostrar algunas entradas
@@ -221,6 +230,6 @@ int main(int argc, char** argv) {
     CHECK_CUDA(cudaFree(dy_2));
     destroy_device(dA);
     CHECK_CUSPARSE(cusparseDestroy(handle));
-    append_row_csv(path, m, n, nnz, time_csr, time_coo, ms_cpu);
+    append_row_csv("CORRIDAS.csv", path, m, n, nnz, time_csr, time_coo, ms_cpu);
     return 0;
 }
