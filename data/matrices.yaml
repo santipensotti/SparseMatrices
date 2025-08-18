@@ -1,12 +1,10 @@
 sets:
-  Grund:
-    - name: poli4
-    - name: poli3
-    - name: bayer10
-    - name: bayer08
-    - name: bayer09
-    - name: bayer04
-  HB:
-    - name: west0479
-    - name: west0655
-
+  Zitney:
+    - name: radfr1
+    - name: rdist3a
+  Mallya:
+    - name: lhr10c
+    - name: lhr71
+  VanVelzen:
+    - name: std1_Jac3
+    - name: Zd_Jac3

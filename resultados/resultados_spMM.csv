@@ -1,0 +1,24 @@
+type,n,k,nnz,tiempoCSR_ms,tiempoCOO_ms,tiempoEigen_ms
+std1_Jac3_db/std1_Jac3_db.mtx,21982,21982,531826,0.050534,0.037094,0.511935
+std1_Jac3_db/std1_Jac3_db_b.mtx,21982,1,0,0.007600,0.007382,0.002570
+thermal2_thermal problem/thermal2_b.mtx,1228045,1,0,0.026192,0.026106,3.448100
+west0655_chemical process simulation problem/west0655.mtx,655,655,2854,0.023379,0.013882,0.004885
+lhr71_chemical process simulation problem/lhr71_b.mtx,70304,1,0,0.006499,0.006253,0.027776
+lhr71_chemical process simulation problem/lhr71.mtx,70304,70304,1528092,0.099661,0.095309,1.420327
+radfr1_chemical process simulation problem/radfr1.mtx,1048,1048,13299,0.022576,0.013386,0.011929
+Zd_Jac3_db/Zd_Jac3_db.mtx,22835,22835,713907,0.060368,0.043322,0.625932
+Zd_Jac3_db/Zd_Jac3_db_b.mtx,22835,1,0,0.006691,0.006365,0.002509
+bcsstk31_structural problem/bcsstk31.mtx,35588,35588,608502,0.056307,0.042586,34.606078
+bayer10_chemical process simulation problem/bayer10.mtx,13436,13436,94926,0.026317,0.018646,0.169894
+bayer10_chemical process simulation problem/bayer10_b.mtx,13436,1,0,0.007686,0.007459,0.001542
+poli4_economic problem/poli4.mtx,33833,33833,73249,0.032544,0.019309,0.222940
+poli3_economic problem/poli3.mtx,16955,16955,37849,0.027482,0.018077,0.123865
+bcsstk18_structural problem/bcsstk18.mtx,11948,11948,80519,0.026451,0.017600,0.149586
+rdist3a_chemical process simulation problem/rdist3a.mtx,2398,2398,61896,0.024208,0.015344,0.047790
+lhr10c_chemical process simulation problem/lhr10c.mtx,10672,10672,232633,0.032115,0.027661,0.234731
+west0479_chemical process simulation problem/west0479.mtx,479,479,1910,0.023891,0.015904,0.004121
+bayer04_chemical process simulation problem/bayer04.mtx,20545,20545,159082,0.028131,0.020080,0.184580
+bayer04_chemical process simulation problem/bayer04_b.mtx,20545,1,0,0.007792,0.007056,0.002441
+bayer09_chemical process simulation problem/bayer09_b.mtx,3083,1,0,0.007731,0.006784,0.000655
+bayer09_chemical process simulation problem/bayer09.mtx,3083,3083,21216,0.023571,0.014381,0.024244
+bayer08_chemical process simulation problem/bayer08.mtx,3008,3008,27576,0.022525,0.014522,0.026161

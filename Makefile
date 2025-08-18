@@ -14,7 +14,7 @@ CUDA_LIB_DIRS ?= /usr/local/cuda/lib64 /usr/local/cuda/lib
 LDFLAGS := $(addprefix -L,$(CUDA_LIB_DIRS)) -lcusparse -lcudart
 
 CXXSTD ?= c++17
-CXXFLAGS := -O3 -std=$(CXXSTD)
+CXXFLAGS := -O3 -std=$(CXXSTD) -w
 
 SRC := src/cusparseSpMV.cu
 BIN_DIR := bin

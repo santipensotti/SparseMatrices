@@ -1,0 +1,33 @@
+type,n,k,nnz,tiempoCSR_ms,tiempoCOO_ms,tiempoEigen_ms
+std1_Jac3_db/std1_Jac3_db.mtx,21982,21982,531826,0.051018,0.036864,0.614808
+std1_Jac3_db/std1_Jac3_db_b.mtx,21982,1,0,0.006426,0.006896,0.002449
+lhr71_chemical process simulation problem/lhr71_b.mtx,70304,1,0,0.006512,0.006493,0.033375
+lhr71_chemical process simulation problem/lhr71.mtx,70304,70304,1528092,0.099053,0.095162,1.349115
+radfr1_chemical process simulation problem/radfr1.mtx,1048,1048,13299,0.022122,0.013549,0.011951
+Zd_Jac3_db/Zd_Jac3_db.mtx,22835,22835,713907,0.060403,0.044330,0.707127
+Zd_Jac3_db/Zd_Jac3_db_b.mtx,22835,1,0,0.008106,0.006550,0.007927
+rdist3a_chemical process simulation problem/rdist3a.mtx,2398,2398,61896,0.023709,0.014922,0.047130
+lhr10c_chemical process simulation problem/lhr10c.mtx,10672,10672,232633,0.029536,0.023706,0.234690
+std1_Jac3_db/std1_Jac3_db.mtx,21982,21982,531826,0.051136,0.036640,0.585576
+std1_Jac3_db/std1_Jac3_db_b.mtx,21982,1,0,0.006854,0.008064,0.002919
+thermal2_thermal problem/thermal2_b.mtx,1228045,1,0,0.028083,0.027155,3.796223
+west0655_chemical process simulation problem/west0655.mtx,655,655,2854,0.023190,0.013926,0.005637
+lhr71_chemical process simulation problem/lhr71_b.mtx,70304,1,0,0.006515,0.006822,0.029867
+lhr71_chemical process simulation problem/lhr71.mtx,70304,70304,1528092,0.099382,0.095485,1.498961
+radfr1_chemical process simulation problem/radfr1.mtx,1048,1048,13299,0.022720,0.013350,0.011944
+radfr1_chemical process simulation problem/bayer04_chemical process simulation problem/bayer04.mtx,20545,20545,159082,0.034915,0.022928,0.238618
+radfr1_chemical process simulation problem/bayer04_chemical process simulation problem/bayer04_b.mtx,20545,1,0,0.007123,0.008182,0.002146
+Zd_Jac3_db/Zd_Jac3_db.mtx,22835,22835,713907,0.062445,0.043318,0.777815
+Zd_Jac3_db/Zd_Jac3_db_b.mtx,22835,1,0,0.007411,0.006656,0.002587
+bcsstk31_structural problem/bcsstk31.mtx,35588,35588,608502,0.053648,0.040342,28.943658
+bayer10_chemical process simulation problem/bayer10.mtx,13436,13436,94926,0.025776,0.017104,0.155068
+bayer10_chemical process simulation problem/bayer10_b.mtx,13436,1,0,0.008243,0.007232,0.001965
+poli4_economic problem/poli4.mtx,33833,33833,73249,0.030493,0.021734,0.217798
+poli3_economic problem/poli3.mtx,16955,16955,37849,0.025581,0.017312,0.125731
+bcsstk18_structural problem/bcsstk18.mtx,11948,11948,80519,0.026880,0.017213,0.251292
+rdist3a_chemical process simulation problem/rdist3a.mtx,2398,2398,61896,0.025910,0.016259,0.101551
+lhr10c_chemical process simulation problem/lhr10c.mtx,10672,10672,232633,0.032096,0.025706,0.375591
+west0479_chemical process simulation problem/west0479.mtx,479,479,1910,0.024627,0.017264,0.006623
+bayer09_chemical process simulation problem/bayer09_b.mtx,3083,1,0,0.008336,0.009875,0.001135
+bayer09_chemical process simulation problem/bayer09.mtx,3083,3083,21216,0.023622,0.015709,0.024522
+bayer08_chemical process simulation problem/bayer08.mtx,3008,3008,27576,0.023098,0.013536,0.028308
