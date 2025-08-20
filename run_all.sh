@@ -25,8 +25,7 @@ fi
 
 # 3. Encontrar y procesar todos los archivos .mtx en el directorio
 # El comando 'find' busca recursivamente todos los archivos que terminen en .mtx
-find "$MATRIX_DIR" -type f -name "*.mtx" | while read -r matrix_path; do
-    echo "============================================================"
+find "$MATRIX_DIR" -type f -name "*.mtx" ! -name "*_b.mtx" ! -name "*_rhs.mtx" ! -name "*_xy.mtx" ! -name "*_coord.mtx" | while read -r matrix_path; do    echo "============================================================"
     echo "Procesando matriz: $matrix_path"
     echo "============================================================"
     

@@ -1,123 +1,72 @@
-#include <Eigen/Sparse>
-#include <Eigen/Dense>
-#include <cstdio>
-#include <stdexcept>
-#include <vector>
+#include "helpers/mtxToCuda.h"
 #include <iostream>
+#include <vector>
 #include <chrono>
+#include <cstdlib>
+#include <string>
+#include <fstream>
+#include <cstdio>
 
-using T = double;
-using SpMat = Eigen::SparseMatrix<T>; 
-
-struct trsm_system {
-    int size{};
-    int nrhs{};
-    int nnz{};
-    SpMat            A;  
-    Eigen::MatrixXd  B;
-};
-
-trsm_system load_system(const char* file)
-{
-    FILE* f = fopen(file, "r");
-    if (!f) throw std::runtime_error("cannot open matrix file");
-
-    trsm_system sys;
-    if (fscanf(f, "%d%d%d", &sys.size, &sys.nrhs, &sys.nnz) != 3) {
-        fclose(f);
-        throw std::runtime_error("bad header");
+// Función para escribir resultados en un archivo CSV
+void create_csv(const char* filename, const char* path, int rows, int cols, long long nnz, double ms, int nthreads) {
+    bool write_header = true;
+    {
+        std::ifstream test(csv_path, std::ios::binary);
+        if (test.good()) { test.seekg(0, std::ios::end); write_header = (test.tellg() == 0); }
     }
-
-    std::vector<int>    rowptr(sys.size + 1);
-    std::vector<int>    colidx(sys.nnz);
-    std::vector<double> vals(sys.nnz);
-
-    for (int r = 0; r <= sys.size; ++r) if (fscanf(f, "%d", &rowptr[r]) != 1) {
-        fclose(f); throw std::runtime_error("bad rowptr");
+    std::ofstream f(csv_path, std::ios::app);
+    if (!f) { fprintf(stderr, "No pude abrir %s\n", csv_path.c_str()); return; }
+    if (write_header) {
+        out << "file,rows,cols,nnz,ms,nthreads\n";
     }
-    for (int i = 0; i < sys.nnz; ++i)    if (fscanf(f, "%d", &colidx[i]) != 1) {
-        fclose(f); throw std::runtime_error("bad colidx");
-    }
-    for (int i = 0; i < sys.nnz; ++i)    if (fscanf(f, "%lf", &vals[i]) != 1) {
-        fclose(f); throw std::runtime_error("bad vals");
-    }
-    fclose(f);
+    out << '"' << path << '"' << ',' << rows << ',' << cols << ',' << nnz << ',' << ms << ',' << nthreads << '\n';
+}
 
-    std::vector<Eigen::Triplet<T>> trips;
-    trips.reserve(sys.nnz);
-    for (int i = 0; i < sys.size; ++i) {
-        for (int p = rowptr[i]; p < rowptr[i + 1]; ++p) {
-            trips.emplace_back(i, colidx[p], vals[p]);
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " <ruta_al_archivo.mtx> [numero_de_hilos]" << std::endl;
+        return 1;
+    }
+    const char* path = argv[1];
+    int num_threads = (argc > 2) ? std::atoi(argv[2]) : 0; // 0 para usar el máximo de hilos
+
+    Eigen::initParallel();
+    Eigen::setNbThreads(num_threads);
+
+    using T = float;
+    
+    try {
+        Eigen::SparseMatrix<T, Eigen::RowMajor, int> A = load_eigen_from_mtx<T>(path);
+        A.makeCompressed();
+
+        std::cout << "Matriz: " << path << std::endl;
+        std::cout << "Dimensiones: " << A.rows() << " x " << A.cols() << ", NNZ: " << A.nonZeros() << std::endl;
+        std::cout << "Usando " << Eigen::nbThreads() << " hilos para el cálculo." << std::endl;
+
+        // Crear un vector aleatorio para la multiplicación
+        std::vector<T> hx(A.cols());
+        std::srand(42);
+        for (size_t i = 0; i < hx.size(); ++i) {
+            hx[i] = (T)std::rand() / RAND_MAX;
         }
-    }
 
-    sys.A.resize(sys.size, sys.size);
-    sys.A.setFromTriplets(trips.begin(), trips.end());
-    sys.A.makeCompressed();
-
-    sys.B.resize(sys.size, sys.nrhs);
-    srand(42);
-    for (int i = 0; i < sys.size; ++i)
-        for (int j = 0; j < sys.nrhs; ++j)
-            sys.B(i, j) = static_cast<double>(rand()) / RAND_MAX;
-
-    return sys;
-}
-
-static double benchmark_sparse_triangular(const SpMat& A, const Eigen::MatrixXd& B,
-                                          int warmup = 2, int repeats = 10)
-{
-    double total_ms = 0.0;
-    Eigen::MatrixXd X(B.rows(), B.cols());
-    for (int rep = 0; rep < warmup + repeats; ++rep) {
+        Eigen::Map<const Eigen::Matrix<T, -1, 1>> x_cpu(hx.data(), A.cols());
+        
+        // Realizar la multiplicación y medir el tiempo
         auto t0 = std::chrono::high_resolution_clock::now();
-        X.noalias() = A.template triangularView<Eigen::Lower>().solve(B);
+        Eigen::Matrix<T, -1, 1> y_cpu = A * x_cpu;
         auto t1 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> dt = t1 - t0;
-        if (rep >= warmup) total_ms += dt.count();
+        double ms_cpu = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::cout << "SpMV completado en " << ms_cpu << " ms." << std::endl;
+
+        // Guardar el resultado en un CSV
+        create_csv("eigen_benchmark.csv", path, A.rows(), A.cols(), A.nonZeros(), ms_cpu, Eigen::nbThreads());
+
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
-    return total_ms / repeats;
-}
-
-static double benchmark_dense_triangular(const SpMat& A, const Eigen::MatrixXd& B,
-                                         int warmup = 2, int repeats = 10)
-{
-    // Convertir una vez a densa fuera del bucle de timing
-    Eigen::MatrixXd Ad = Eigen::MatrixXd(A); // usa solo la parte inferior en el solve
-    double total_ms = 0.0;
-    Eigen::MatrixXd X(B.rows(), B.cols());
-    for (int rep = 0; rep < warmup + repeats; ++rep) {
-        auto t0 = std::chrono::high_resolution_clock::now();
-        X.noalias() = Ad.template triangularView<Eigen::Lower>().solve(B);
-        auto t1 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> dt = t1 - t0;
-        if (rep >= warmup) total_ms += dt.count();
-    }
-    return total_ms / repeats;
-}
-
-void trsm_generic(trsm_system& sys)
-{
-    // Sparse (CSR interno de Eigen)
-    double ms_sparse = benchmark_sparse_triangular(sys.A, sys.B);
-
-    // Dense (conversión a MatrixXd y solve triangular)
-    double ms_dense  = benchmark_dense_triangular(sys.A, sys.B);
-
-    std::printf("SparseTriSolve,%dx%d,%.6f ms\n", sys.size, sys.size, ms_sparse);
-    std::printf("DenseTriSolve,%dx%d,%.6f ms\n",  sys.size, sys.size, ms_dense);
-}
-
-int main()
-{
-    std::vector<const char*> matrix_files = {"matrix13.txt", "matrix16.txt", "matrix20.txt"};
-    for (const char* file : matrix_files) {
-        try {
-            trsm_system sys = load_system(file);
-            trsm_generic(sys);
-        } catch (const std::exception& e) {
-            std::cerr << "Error en " << file << ": " << e.what() << "\n";
-        }
-    }
+    
     return 0;
 }
