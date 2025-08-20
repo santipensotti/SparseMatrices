@@ -6,12 +6,11 @@
 #include <stdexcept>
 #include <algorithm>
 #include <tuple>
-
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/SparseExtra>
 
 template<typename T>
-using SpMat = Eigen::SparseMatrix<T, Eigen::ColMajor, int>;
+using SpMat = Eigen::SparseMatrix<T, Eigen::RowMajor, int>;
 
 // ====== Contenedores host ======
 template<typename T>

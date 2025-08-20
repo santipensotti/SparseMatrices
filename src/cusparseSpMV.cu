@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
     CHECK_CUDA(cudaMemcpy(hy.data(), dy, (size_t)H.rows*sizeof(T), cudaMemcpyDeviceToHost));
 
     // CPU Eigen
-    Eigen::setNbThreads(1);
+    Eigen::setNbThreads(n);
     Eigen::SparseMatrix<T, Eigen::ColMajor, int> A = load_eigen_from_mtx<T>(path);
     A.makeCompressed();
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> x_cpu(hx.data(), A.cols());
