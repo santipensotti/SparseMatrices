@@ -2,7 +2,7 @@ from ssgetpy import fetch
 import os
 import ssgetpy
 
-result = ssgetpy.fetch(group='HB', name='gemat11', format='MM')  # descarga el .mtx
+result = ssgetpy.fetch(group='Andrianov', name='lp1', format='MM')  # descarga el .mtx
 
 print(result)  # muestra el resultado de la descarga
 current_path = os.getcwd()

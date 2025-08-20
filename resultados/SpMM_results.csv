@@ -1,0 +1,17 @@
+matrix_name,m,n,k,nnz,tiempoCSR_ms,tiempoCOO_ms,tiempoEigen_ms
+data/ssm/std1_Jac3_db/std1_Jac3_db.mtx,21982,21982,16,531826,0.307706,0.287923,8.283572
+data/ssm/west0655_chemical process simulation problem/west0655.mtx,655,655,16,2854,0.030138,0.018518,0.062471
+data/ssm/lhr71_chemical process simulation problem/lhr71.mtx,70304,70304,16,1528092,0.812755,0.785734,21.463602
+data/ssm/radfr1_chemical process simulation problem/radfr1.mtx,1048,1048,16,13299,0.032112,0.022342,0.250078
+data/ssm/Zd_Jac3_db/Zd_Jac3_db.mtx,22835,22835,16,713907,0.411773,0.390394,10.812086
+data/ssm/bcsstk31_structural problem/bcsstk31.mtx,35588,35588,16,608502,0.341917,0.337542,470.261594
+data/ssm/bayer10_chemical process simulation problem/bayer10.mtx,13436,13436,16,94926,0.075626,0.063651,2.327421
+data/ssm/poli4_economic problem/poli4.mtx,33833,33833,16,73249,0.099296,0.111971,3.983973
+data/ssm/poli3_economic problem/poli3.mtx,16955,16955,16,37849,0.063485,0.053037,2.409275
+data/ssm/bcsstk18_structural problem/bcsstk18.mtx,11948,11948,16,80519,0.068086,0.055405,2.810336
+data/ssm/rdist3a_chemical process simulation problem/rdist3a.mtx,2398,2398,16,61896,0.053530,0.044957,0.843699
+data/ssm/lhr10c_chemical process simulation problem/lhr10c.mtx,10672,10672,16,232633,0.141242,0.127946,3.423101
+data/ssm/west0479_chemical process simulation problem/west0479.mtx,479,479,16,1910,0.026426,0.018442,0.048076
+data/ssm/bayer04_chemical process simulation problem/bayer04.mtx,20545,20545,16,159082,0.113984,0.102781,3.377249
+data/ssm/bayer09_chemical process simulation problem/bayer09.mtx,3083,3083,16,21216,0.037107,0.028125,0.472570
+data/ssm/bayer08_chemical process simulation problem/bayer08.mtx,3008,3008,16,27576,0.037107,0.027616,0.438228

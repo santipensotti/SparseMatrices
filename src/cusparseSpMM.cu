@@ -156,12 +156,13 @@ void errorGpuCpu(const Eigen::Matrix<T, -1, -1>& C_cpu,
 
 int main(int argc, char** argv) {
     const char* path = (argc > 1 ? argv[1] : "example.mtx");
-    const int k = (argc > 2 ? std::atoi(argv[2]) : 16);
+
 
     // 1) Cargar CSR (host)
     using T = float;
     CSRHost<T> H = load_csr_from_mtx<T>(path);
     printf("Matriz: %d x %d  nnz=%d\n", H.rows, H.cols, H.nnz);
+    int k = H.rows;
     if (H.nnz == 0) return 1;
     // 3) Crear B y C en host
     std::vector<T> hB(H.cols * k);

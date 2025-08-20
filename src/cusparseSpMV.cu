@@ -68,8 +68,8 @@ double runSpMV_once(cusparseHandle_t handle,
     cudaEvent_t start, stop;
     CHECK_CUDA(cudaEventCreate(&start));
     CHECK_CUDA(cudaEventCreate(&stop));
-    const int iters = 10;
-    const int warm_up = 2;
+    const int iters = 1;
+    const int warm_up = 0;
     for (int i=0; i < warm_up; ++i){
         CHECK_CUSPARSE(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
             &alpha, descr_A, x_vec, &beta, y_vec, CUDA_R_32F, alg, dBuffer));
@@ -105,6 +105,7 @@ void append_row_csv(const std::string& csv_path, const std::string& matrix_name,
 
 int main(int argc, char** argv) {
     const char* path = (argc > 1 ? argv[1] : "example.mtx");
+    Eigen::initParallel();
     using T = float;
     CSRHost<T> H = load_csr_from_mtx<T>(path);
     printf("Matriz: %d x %d  nnz=%d\n", H.rows, H.cols, H.nnz);
@@ -152,6 +153,7 @@ int main(int argc, char** argv) {
     CHECK_CUDA(cudaMemcpy(hy.data(), dy, (size_t)H.rows*sizeof(T), cudaMemcpyDeviceToHost));
 
     // CPU Eigen
+    Eigen::setNbThreads(1);
     Eigen::SparseMatrix<T, Eigen::ColMajor, int> A = load_eigen_from_mtx<T>(path);
     A.makeCompressed();
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> x_cpu(hx.data(), A.cols());

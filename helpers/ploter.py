@@ -63,6 +63,7 @@ def plot_vs_size_kind(df, nombre_csv):
     plt.close()
 
 def main():
+
     if len(sys.argv) > 1:
         csv_path = sys.argv[1]
     else:
@@ -74,7 +75,6 @@ def main():
 
     nombre_csv = os.path.splitext(os.path.basename(csv_path))[0]
     df = pd.read_csv(csv_path)
-
     df["matrix_name"] = df["matrix_name"].apply(lambda x: os.path.splitext(os.path.basename(x))[0])
     df["matrix_name"] = df["matrix_name"].str.replace("_b$", "", regex=True)
 
@@ -107,6 +107,22 @@ def main():
         print("Generando todos los gráficos...")
         for func in plot_functions.values():
             func(df, nombre_csv)
+    # borra las que tienen nnz = 0
+    df = df[df["nnz"] > 0]
+    # differences between csr and eigen; and coo with eigen
+    df['diff_csr_eigen'] = df['tiempoCSR_ms'] - df['tiempoEigen_ms']
+    df['diff_coo_eigen'] = df['tiempoCOO_ms'] - df['tiempoEigen_ms']
+
+    # Mostrar los top 10 con las diferencias más pequeñas (más negativas => método más rápido que Eigen)
+    print("\nTop 10: CSR más rápido que Eigen (diff_csr_eigen más negativo):")
+    print(df.sort_values('diff_csr_eigen').head(10)[
+        ['matrix_name', 'n', 'k', 'nnz', 'tiempoCSR_ms', 'tiempoEigen_ms', 'diff_csr_eigen']
+    ].to_string(index=False))
+
+    print("\nTop 10: COO más rápido que Eigen (diff_coo_eigen más negativo):")
+    print(df.sort_values('diff_coo_eigen').head(10)[
+        ['matrix_name', 'n', 'k', 'nnz', 'tiempoCOO_ms', 'tiempoEigen_ms', 'diff_coo_eigen']
+    ].to_string(index=False))
 
 if __name__ == "__main__":
     main()
